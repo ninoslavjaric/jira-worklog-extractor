@@ -37,7 +37,7 @@ public class Logger {
         warn(warning, true);
     }
 
-    private static void warn(String warning, boolean br) {
+    public static void warn(String warning, boolean br) {
         print(ANSI_YELLOW, warning, br);
     }
 
@@ -45,8 +45,16 @@ public class Logger {
         success(warning, true);
     }
 
-    private static void success(String warning, boolean br) {
+    public static void success(String warning, boolean br) {
         print(ANSI_GREEN, warning, br);
+    }
+
+    public static void fail(String warning) {
+        fail(warning, true);
+    }
+
+    public static void fail(String warning, boolean br) {
+        print(ANSI_RED, warning, br);
     }
 
     private static void print(String color, String string, boolean br) {

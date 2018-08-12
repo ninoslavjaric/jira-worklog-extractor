@@ -1,20 +1,23 @@
 package com.logic;
 
+import com.Logger;
 import com.model.Worklog;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
-
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.TreeMap;
 
 public class WorklogThread extends Thread {
+    private final int CALL_ATTEMPT_LIMIT = 5;
+
     private String url;
+    private int callAttempt = 1;
 
     WorklogThread(String url) {
         this.url = url;
@@ -22,6 +25,10 @@ public class WorklogThread extends Thread {
 
     @Override
     public void run() {
+        call();
+    }
+
+    private void call() {
         try {
             Object worklogs;
             TreeMap<String, ArrayList<Worklog>> stringWorklogHashMap;
@@ -54,6 +61,13 @@ public class WorklogThread extends Thread {
                 wls.add(wl);
                 stringWorklogHashMap.put(formattedDate, wls);
                 Worklog.setLogs(authorKey, stringWorklogHashMap);
+            }
+        } catch (ConnectException e) {
+            Logger.fail(String.format("\tCall to '%s' failed. Attempt number %d.", url, callAttempt));
+            Logger.fail(e.getMessage());
+
+            if (++callAttempt < CALL_ATTEMPT_LIMIT) {
+                call();
             }
         } catch (IOException | ParseException | java.text.ParseException e) {
             e.printStackTrace();

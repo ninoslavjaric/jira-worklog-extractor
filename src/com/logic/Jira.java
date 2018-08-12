@@ -6,7 +6,6 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -28,6 +27,7 @@ public class Jira {
     private int issuePullTotal = 0;
 
     private ArrayList<String> issues = new ArrayList<>();
+    private int issueCallAttempt;
 
     private synchronized void updateIssuePullStatus(int increment) {
         issuePullStatus += increment;
@@ -141,36 +141,31 @@ public class Jira {
         }
     }
 
-    void issueListCall(int offset, int limit) {
-        try {
-            String jql = String.format("project in (%s)", String.join(", ", projects));
-            jql = URLEncoder.encode(jql, "UTF-8").replace("+", "%20");
+    void issueListCall(int offset, int limit) throws IOException, ParseException {
+        String jql = String.format("project in (%s)", String.join(", ", projects));
+        jql = URLEncoder.encode(jql, "UTF-8").replace("+", "%20");
 
-            String resource = String.format(initialResourcePattern, jql, offset, limit);
+        String resource = String.format(initialResourcePattern, jql, offset, limit);
 
-            Object jsonObject = getResponse(new URL(resource));
+        Object jsonObject = getResponse(new URL(resource));
 
-            JSONArray issues = (JSONArray) ((JSONObject) jsonObject).get("issues");
+        JSONArray issues = (JSONArray) ((JSONObject) jsonObject).get("issues");
 
-            String url;
-            JSONObject JSONobject;
-            for (Object object : issues){
-                if (object instanceof JSONObject) {
-                    JSONobject = (JSONObject) object;
-                    url = (String) JSONobject.get("self");
-                    this.issues.add(url);
-                }
+        String url;
+        JSONObject JSONobject;
+        for (Object object : issues) {
+            if (object instanceof JSONObject) {
+                JSONobject = (JSONObject) object;
+                url = (String) JSONobject.get("self");
+                this.issues.add(url);
             }
-
-            updateIssuePullStatus(issues.size());
-        } catch (IOException | ParseException e) {
-            e.printStackTrace();
-            System.exit(2);
         }
+
+        updateIssuePullStatus(issues.size());
     }
 
     private void setIssues() {
-        if ((this.issues = (ArrayList<String>) Serializer.unserialize(ISSUES_SERIALIZED)) == null) {
+        if ((this.issues = (ArrayList<String>) Serializer.unserialize(ISSUES_SERIALIZED, 1)) == null) {
             this.issues = new ArrayList<>();
             issueListCall();
 
